@@ -214,7 +214,31 @@ function pickRandomEvent(usedSet) {
   return pick;
 }
 
-function shareText(ending, game, history) {
+/* ═══════════════════ SHARE URL ═══════════════════ */
+
+function encodeResult(ending, game, historyLen) {
+  const d = [ending.id, game.week, game.funds, game.talent, game.ethics, game.innovation, game.aiThreat, historyLen];
+  return btoa(d.join(","));
+}
+
+function decodeResult(hash) {
+  try {
+    const raw = hash.startsWith("#") ? hash.slice(1) : hash;
+    if (!raw) return null;
+    const parts = atob(raw).split(",");
+    if (parts.length < 8) return null;
+    const [id, week, funds, talent, ethics, innovation, aiThreat, decisions] = parts;
+    const ending = ENDINGS.find(e => e.id === id);
+    if (!ending) return null;
+    return {
+      ending,
+      game: { week: +week, funds: +funds, talent: +talent, ethics: +ethics, innovation: +innovation, aiThreat: +aiThreat },
+      decisions: +decisions,
+    };
+  } catch { return null; }
+}
+
+function shareText(ending, game, historyLen, url) {
   const b = v => { const f = Math.round((v / 100) * 10); return "█".repeat(f) + "░".repeat(10 - f); };
   return [
     `🎮 SINGULARITY: The Last Founder`,
@@ -227,206 +251,11 @@ function shareText(ending, game, history) {
     `◆ Innovation ${b(game.innovation)} ${game.innovation}`,
     `⚠ AI Threat  ${game.aiThreat}%`,
     ``,
-    `${history.length} rozhodnutí · 7 možných konců`,
+    `${historyLen} rozhodnutí · 7 možných konců`,
     `Dokážeš dopadnout jinak?`,
     ``,
-    `https://singularity-beryl.vercel.app`,
+    url,
   ].join("\n");
-}
-
-function wrapText(ctx, text, maxWidth) {
-  const words = text.split(" ");
-  const lines = [];
-  let line = "";
-  for (const w of words) {
-    const test = line ? line + " " + w : w;
-    if (ctx.measureText(test).width > maxWidth && line) {
-      lines.push(line);
-      line = w;
-    } else {
-      line = test;
-    }
-  }
-  if (line) lines.push(line);
-  return lines;
-}
-
-async function generateResultImage(ending, game, history) {
-  const W = 1200, H = 630;
-  const c = document.createElement("canvas");
-  c.width = W; c.height = H;
-  const ctx = c.getContext("2d");
-
-  const toneColor = ending.tone === "light" ? "#7fda8f" : ending.tone === "amber" ? "#c9a84c" : "#e84057";
-  const serif = "'Cormorant Garamond',Georgia,serif";
-  const mono = "'JetBrains Mono','SF Mono','Courier New',monospace";
-
-  // Background
-  ctx.fillStyle = "#0d0d0f";
-  ctx.fillRect(0, 0, W, H);
-
-  // Subtle radial glow
-  const grad = ctx.createRadialGradient(W / 2, 200, 0, W / 2, 200, 500);
-  grad.addColorStop(0, ending.tone === "light" ? "rgba(127,218,143,0.05)" : ending.tone === "amber" ? "rgba(201,168,76,0.05)" : "rgba(232,64,87,0.05)");
-  grad.addColorStop(1, "transparent");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, W, H);
-
-  // Corner accents
-  ctx.strokeStyle = toneColor;
-  ctx.globalAlpha = 0.15;
-  ctx.lineWidth = 1.5;
-  const co = 28, cl = 44;
-  [[co, co, co, co + cl, co + cl, co], [W - co, co, W - co, co + cl, W - co - cl, co],
-   [co, H - co, co, H - co - cl, co + cl, H - co], [W - co, H - co, W - co, H - co - cl, W - co - cl, H - co]].forEach(([x1, y1, x2, y2, x3, y3]) => {
-    ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x1, y1); ctx.lineTo(x3, y3); ctx.stroke();
-  });
-  ctx.globalAlpha = 1;
-
-  // Top label
-  ctx.font = `500 13px ${mono}`;
-  ctx.fillStyle = "#71717a";
-  ctx.textAlign = "center";
-  ctx.letterSpacing = "4px";
-  ctx.fillText("SINGULARITY: THE LAST FOUNDER", W / 2, 64);
-  ctx.letterSpacing = "0px";
-
-  // Decorative line
-  const lg = ctx.createLinearGradient(300, 0, 900, 0);
-  lg.addColorStop(0, "transparent"); lg.addColorStop(0.3, toneColor + "60");
-  lg.addColorStop(0.5, toneColor); lg.addColorStop(0.7, toneColor + "60");
-  lg.addColorStop(1, "transparent");
-  ctx.strokeStyle = lg; ctx.lineWidth = 0.5;
-  ctx.beginPath(); ctx.moveTo(300, 84); ctx.lineTo(900, 84); ctx.stroke();
-
-  // Ending icon
-  ctx.font = "56px serif";
-  ctx.textAlign = "center";
-  ctx.fillText(ending.icon, W / 2, 148);
-
-  // Ending title
-  ctx.font = `700 46px ${serif}`;
-  ctx.fillStyle = toneColor;
-  ctx.fillText(ending.title, W / 2, 200);
-
-  // Week
-  ctx.font = `500 13px ${mono}`;
-  ctx.fillStyle = "#71717a";
-  ctx.letterSpacing = "3px";
-  ctx.fillText(`TÝDEN ${game.week}/30  ·  ${history.length} ROZHODNUTÍ`, W / 2, 230);
-  ctx.letterSpacing = "0px";
-
-  // Description
-  ctx.font = `italic 17px ${serif}`;
-  ctx.fillStyle = "#a1a1aa";
-  const descLines = wrapText(ctx, ending.desc, 580);
-  descLines.forEach((line, i) => {
-    ctx.fillText(line, W / 2, 268 + i * 26);
-  });
-
-  // Resource section
-  const resY = 268 + descLines.length * 26 + 30;
-  const resources = [
-    { key: "funds", label: "FUNDS", value: game.funds, color: "#c9a84c" },
-    { key: "talent", label: "TALENT", value: game.talent, color: "#6eb5ff" },
-    { key: "ethics", label: "ETHICS", value: game.ethics, color: "#7fda8f" },
-    { key: "innovation", label: "INNOVATION", value: game.innovation, color: "#c688f0" },
-  ];
-
-  const barW = 160, barH = 8, gap = 260;
-  const startX = (W - (2 * gap - (gap - barW - 70))) / 2 - 30;
-
-  resources.forEach((r, i) => {
-    const col = i % 2;
-    const row = Math.floor(i / 2);
-    const x = startX + col * gap;
-    const y = resY + row * 48;
-
-    // Label
-    ctx.font = `500 11px ${mono}`;
-    ctx.fillStyle = "#71717a";
-    ctx.textAlign = "left";
-    ctx.letterSpacing = "2px";
-    ctx.fillText(r.label, x, y);
-    ctx.letterSpacing = "0px";
-
-    // Bar bg
-    ctx.fillStyle = "rgba(255,255,255,0.06)";
-    ctx.beginPath();
-    ctx.roundRect(x, y + 6, barW, barH, 4);
-    ctx.fill();
-
-    // Bar fill
-    const fillW = Math.max(0, Math.min(barW, (r.value / 100) * barW));
-    if (fillW > 0) {
-      ctx.fillStyle = r.color;
-      ctx.globalAlpha = 0.85;
-      ctx.beginPath();
-      ctx.roundRect(x, y + 6, fillW, barH, 4);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-
-    // Value
-    ctx.font = `700 20px ${mono}`;
-    ctx.fillStyle = r.color;
-    ctx.textAlign = "left";
-    ctx.fillText(String(r.value), x + barW + 12, y + 14);
-  });
-
-  // AI Threat
-  const threatY = resY + 120;
-  ctx.textAlign = "center";
-
-  // Threat label
-  ctx.font = `500 11px ${mono}`;
-  ctx.fillStyle = "#71717a";
-  ctx.letterSpacing = "3px";
-  ctx.fillText("AI THREAT", W / 2, threatY);
-  ctx.letterSpacing = "0px";
-
-  // Threat bar
-  const tBarW = 360, tBarH = 10;
-  const tBarX = (W - tBarW) / 2;
-  ctx.fillStyle = "rgba(255,255,255,0.06)";
-  ctx.beginPath();
-  ctx.roundRect(tBarX, threatY + 8, tBarW, tBarH, 5);
-  ctx.fill();
-
-  const threatFill = Math.max(0, Math.min(tBarW, (game.aiThreat / 100) * tBarW));
-  if (threatFill > 0) {
-    const tGrad = ctx.createLinearGradient(tBarX, 0, tBarX + threatFill, 0);
-    tGrad.addColorStop(0, "#7fda8f");
-    tGrad.addColorStop(0.5, "#e8a040");
-    tGrad.addColorStop(1, "#e84057");
-    ctx.fillStyle = tGrad;
-    ctx.globalAlpha = 0.9;
-    ctx.beginPath();
-    ctx.roundRect(tBarX, threatY + 8, threatFill, tBarH, 5);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  }
-
-  // Threat value
-  const threatColor = game.aiThreat > 70 ? "#e84057" : game.aiThreat > 40 ? "#e8a040" : "#7fda8f";
-  ctx.font = `700 22px ${mono}`;
-  ctx.fillStyle = threatColor;
-  ctx.fillText(`${game.aiThreat}%`, W / 2, threatY + 48);
-
-  // Bottom line
-  const lg2 = ctx.createLinearGradient(200, 0, 1000, 0);
-  lg2.addColorStop(0, "transparent"); lg2.addColorStop(0.5, "rgba(201,168,76,0.2)"); lg2.addColorStop(1, "transparent");
-  ctx.strokeStyle = lg2; ctx.lineWidth = 0.5;
-  ctx.beginPath(); ctx.moveTo(200, H - 56); ctx.lineTo(1000, H - 56); ctx.stroke();
-
-  // CTA
-  ctx.font = `500 13px ${mono}`;
-  ctx.fillStyle = "#71717a";
-  ctx.letterSpacing = "2px";
-  ctx.fillText("DOKÁŽEŠ DOPADNOUT JINAK?  ·  SINGULARITY-BERYL.VERCEL.APP", W / 2, H - 32);
-  ctx.letterSpacing = "0px";
-
-  return new Promise(resolve => c.toBlob(resolve, "image/png"));
 }
 
 /* ═══════════════════ COMPONENTS ═══════════════════ */
@@ -498,6 +327,18 @@ export default function Singularity() {
   const [fade, setFade] = useState(false);
   const [hover, setHover] = useState(-1);
   const [shareState, setShareState] = useState("idle");
+  const [sharedResult, setSharedResult] = useState(null);
+
+  // Parse shared result from URL hash on mount
+  useEffect(() => {
+    const result = decodeResult(window.location.hash);
+    if (result) {
+      setSharedResult(result);
+      setPhase("shared");
+      // Clean hash without triggering navigation
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => { setTimeout(() => setFade(true), 80); }, [phase]);
 
@@ -557,39 +398,19 @@ export default function Singularity() {
   const cont = () => { Math.random() < 0.3 ? doRandom(game) : advanceWeek(game, usedStory); };
   const contRnd = () => advanceWeek(game, usedStory);
 
-  const doShare = async () => {
-    setShareState("generating");
-    try {
-      const blob = await generateResultImage(ending, game, history);
-      const file = new File([blob], "singularity-result.png", { type: "image/png" });
-      const text = shareText(ending, game, history);
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        try { await navigator.share({ title: "Singularity: The Last Founder", text, files: [file] }); setShareState("shared"); setTimeout(() => setShareState("idle"), 3000); return; } catch (e) { if (e.name === "AbortError") { setShareState("idle"); return; } }
-      }
-      // Fallback: copy text + trigger image download
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url; a.download = "singularity-result.png";
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      try { await navigator.clipboard.writeText(text); setShareState("copied"); } catch { setShareState("downloaded"); }
-      setTimeout(() => setShareState("idle"), 3000);
-    } catch {
-      setShareState("error"); setTimeout(() => setShareState("idle"), 3000);
-    }
+  const buildShareUrl = () => {
+    const hash = encodeResult(ending, game, history.length);
+    return `${window.location.origin}${window.location.pathname}#${hash}`;
   };
 
-  const doDownloadImage = async () => {
-    setShareState("generating");
-    try {
-      const blob = await generateResultImage(ending, game, history);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url; a.download = "singularity-result.png";
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      setShareState("downloaded"); setTimeout(() => setShareState("idle"), 3000);
-    } catch {
-      setShareState("error"); setTimeout(() => setShareState("idle"), 3000);
+  const doShare = async () => {
+    const url = buildShareUrl();
+    const text = shareText(ending, game, history.length, url);
+    if (navigator.share) {
+      try { await navigator.share({ title: "Singularity: The Last Founder", text, url }); setShareState("shared"); setTimeout(() => setShareState("idle"), 3000); return; } catch (e) { if (e.name === "AbortError") return; }
     }
+    try { await navigator.clipboard.writeText(text); setShareState("copied"); } catch { setShareState("error"); }
+    setTimeout(() => setShareState("idle"), 3000);
   };
 
   const restart = () => { setPhase("intro"); setFade(false); setTimeout(() => setFade(true), 80); setGame(null); setEnding(null); };
@@ -732,6 +553,39 @@ export default function Singularity() {
         </div>
       )}
 
+      {/* ═══ SHARED RESULT ═══ */}
+      {phase === "shared" && sharedResult && (() => {
+        const { ending: se, game: sg, decisions } = sharedResult;
+        const stc = (t) => t === "light" ? "#7fda8f" : t === "amber" ? "var(--acc)" : "#e84057";
+        return (
+          <div style={{ ...card, textAlign: "center", maxWidth: 720, borderColor: se.tone === "light" ? "rgba(127,218,143,.25)" : se.tone === "amber" ? "rgba(201,168,76,.25)" : "rgba(232,64,87,.25)" }}>
+            <div style={{ fontSize: 12, letterSpacing: 3, fontFamily: "var(--fm)", marginBottom: 24, color: "var(--txd)", textTransform: "uppercase" }}>Sdílený výsledek</div>
+            <div style={{ fontSize: 76, marginBottom: 20 }}>{se.icon}</div>
+            <div style={{ fontSize: 13, letterSpacing: 4, fontFamily: "var(--fm)", marginBottom: 16, color: stc(se.tone) }}>KONEC — TÝDEN {sg.week}</div>
+            <h2 style={{ fontFamily: "var(--fs)", fontSize: 48, fontWeight: 700, margin: "0 0 20px", color: stc(se.tone) }}>{se.title}</h2>
+            <p style={{ fontSize: 21, lineHeight: 1.9, color: "#a1a1aa", margin: "0 auto 36px", maxWidth: 540 }}>{se.desc}</p>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginBottom: 36, padding: 28, background: "rgba(255,255,255,0.02)", borderRadius: 14, border: "1px solid var(--bdr)" }}>
+              {Object.entries(RESOURCES).map(([k, r]) => (
+                <div key={k} style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 13, color: "var(--txd)", letterSpacing: 1, fontFamily: "var(--fm)" }}>{r.icon} {r.label}</div>
+                  <div style={{ fontSize: 32, fontWeight: 700, color: r.color, fontFamily: "var(--fm)" }}>{sg[k]}</div>
+                </div>
+              ))}
+              <div style={{ gridColumn: "1 / -1", textAlign: "center", paddingTop: 12, borderTop: "1px solid var(--bdr)" }}>
+                <div style={{ fontSize: 13, color: "var(--txd)", letterSpacing: 1, fontFamily: "var(--fm)" }}>⚠ AI Threat</div>
+                <div style={{ fontSize: 32, fontWeight: 700, fontFamily: "var(--fm)", color: sg.aiThreat > 70 ? "#e84057" : sg.aiThreat > 40 ? "#e8a040" : "#7fda8f" }}>{sg.aiThreat}%</div>
+              </div>
+            </div>
+
+            <div style={{ fontSize: 15, color: "var(--txd)", fontFamily: "var(--fm)", marginBottom: 32 }}>{decisions} rozhodnutí · 7 možných konců</div>
+
+            <button onClick={startGame} style={{ ...pbtn, padding: "18px 56px", fontSize: 16, letterSpacing: 3 }}>ZKUS TO TAKY →</button>
+            <div style={{ marginTop: 28, fontSize: 13, color: "var(--txd)", fontFamily: "var(--fm)" }}>Dokážeš dopadnout jinak?</div>
+          </div>
+        );
+      })()}
+
       {/* ═══ ENDING ═══ */}
       {phase === "ending" && ending && (
         <div style={{ ...card, textAlign: "center", maxWidth: 720, borderColor: ending.tone === "light" ? "rgba(127,218,143,.25)" : ending.tone === "amber" ? "rgba(201,168,76,.25)" : "rgba(232,64,87,.25)" }}>
@@ -769,17 +623,10 @@ export default function Singularity() {
           <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={doShare} style={{
               ...pbtn, padding: "16px 36px",
-              background: shareState === "copied" || shareState === "downloaded" ? "#7fda8f" : shareState === "shared" ? "#6eb5ff" : shareState === "error" ? "#e84057" : shareState === "generating" ? "#71717a" : "var(--acc)",
+              background: shareState === "copied" ? "#7fda8f" : shareState === "shared" ? "#6eb5ff" : shareState === "error" ? "#e84057" : "var(--acc)",
               transition: "background .3s",
-              pointerEvents: shareState === "generating" ? "none" : "auto",
             }}>
-              {shareState === "generating" ? "⏳ GENERUJI…" : shareState === "copied" ? "✓ OBRÁZEK STAŽEN + TEXT ZKOPÍROVÁN" : shareState === "downloaded" ? "✓ OBRÁZEK STAŽEN" : shareState === "shared" ? "✓ SDÍLENO" : shareState === "error" ? "✗ CHYBA" : "📤 SDÍLET VÝSLEDEK"}
-            </button>
-            <button onClick={doDownloadImage} style={{
-              ...sbtn, padding: "16px 36px",
-              pointerEvents: shareState === "generating" ? "none" : "auto",
-            }}>
-              🖼 STÁHNOUT OBRÁZEK
+              {shareState === "copied" ? "✓ ZKOPÍROVÁNO" : shareState === "shared" ? "✓ SDÍLENO" : shareState === "error" ? "✗ CHYBA" : "📤 SDÍLET VÝSLEDEK"}
             </button>
             <button onClick={restart} style={{ ...sbtn, padding: "16px 36px" }}>↻ HRÁT ZNOVU</button>
           </div>
