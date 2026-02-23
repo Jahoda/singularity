@@ -282,6 +282,23 @@ const Badges = ({ fx }) => (
   </div>
 );
 
+const Hints = ({ fx }) => (
+  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+    {Object.entries(fx).filter(([k]) => k in RESOURCES).map(([k, v]) => {
+      const r = RESOURCES[k]; const pos = v > 0;
+      return (
+        <span key={k} style={{
+          fontSize: 12, fontFamily: "var(--fm)",
+          color: pos ? r.color : "#e84057",
+          opacity: 0.7,
+        }}>
+          {r.icon}{pos ? "↑" : "↓"}
+        </span>
+      );
+    })}
+  </div>
+);
+
 const Bar = ({ value, max, color, label, icon }) => (
   <div style={{ flex: 1, minWidth: 140 }}>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
@@ -511,7 +528,7 @@ export default function Singularity() {
                       transition: "all .15s",
                     }} />
                     <span style={{ flex: 1, minWidth: 100 }}>{ch.label}</span>
-                    <Badges fx={ch.effects} />
+                    <Hints fx={ch.effects} />
                   </div>
                 </button>
               );
