@@ -3,10 +3,10 @@ import { useState, useEffect, useCallback, useRef } from "react";
 /* ═══════════════════ DATA ═══════════════════ */
 
 const RESOURCES = {
-  funds:      { icon: "◈", label: "Funds",      color: "#c9a84c", max: 100 },
-  talent:     { icon: "◉", label: "Talent",     color: "#6eb5ff", max: 100 },
-  ethics:     { icon: "◎", label: "Ethics",     color: "#7fda8f", max: 100 },
-  innovation: { icon: "◆", label: "Innovation", color: "#c688f0", max: 100 },
+  funds:      { icon: "💰", label: "Funds",      color: "#c9a84c", max: 100 },
+  talent:     { icon: "🧠", label: "Talent",     color: "#6eb5ff", max: 100 },
+  ethics:     { icon: "⚖️", label: "Ethics",     color: "#7fda8f", max: 100 },
+  innovation: { icon: "💡", label: "Innovation", color: "#c688f0", max: 100 },
 };
 
 const ENDINGS = [
@@ -245,11 +245,11 @@ function shareText(ending, game, historyLen, url) {
     ``,
     `${ending.icon} ${ending.title} — týden ${game.week}/30`,
     ``,
-    `◈ Funds      ${b(game.funds)} ${game.funds}`,
-    `◉ Talent     ${b(game.talent)} ${game.talent}`,
-    `◎ Ethics     ${b(game.ethics)} ${game.ethics}`,
-    `◆ Innovation ${b(game.innovation)} ${game.innovation}`,
-    `⚠ AI Threat  ${game.aiThreat}%`,
+    `💰 Funds      ${b(game.funds)} ${game.funds}`,
+    `🧠 Talent     ${b(game.talent)} ${game.talent}`,
+    `⚖️ Ethics     ${b(game.ethics)} ${game.ethics}`,
+    `💡 Innovation ${b(game.innovation)} ${game.innovation}`,
+    `🤖 AI Threat  ${game.aiThreat}%`,
     ``,
     `${historyLen} rozhodnutí · 7 možných konců`,
     `Dokážeš dopadnout jinak?`,
@@ -590,7 +590,7 @@ export default function Singularity() {
                 </div>
               ))}
               <div style={{ gridColumn: "1 / -1", textAlign: "center", paddingTop: 12, borderTop: "1px solid var(--bdr)" }}>
-                <div style={{ fontSize: 13, color: "var(--txd)", letterSpacing: 1, fontFamily: "var(--fm)" }}>⚠ AI Threat</div>
+                <div style={{ fontSize: 13, color: "var(--txd)", letterSpacing: 1, fontFamily: "var(--fm)" }}>🤖 AI Threat</div>
                 <div style={{ fontSize: 32, fontWeight: 700, fontFamily: "var(--fm)", color: sg.aiThreat > 70 ? "#e84057" : sg.aiThreat > 40 ? "#e8a040" : "#7fda8f" }}>{sg.aiThreat}%</div>
               </div>
             </div>
@@ -619,7 +619,7 @@ export default function Singularity() {
               </div>
             ))}
             <div style={{ gridColumn: "1 / -1", textAlign: "center", paddingTop: 12, borderTop: "1px solid var(--bdr)" }}>
-              <div style={{ fontSize: 13, color: "var(--txd)", letterSpacing: 1, fontFamily: "var(--fm)" }}>⚠ AI Threat</div>
+              <div style={{ fontSize: 13, color: "var(--txd)", letterSpacing: 1, fontFamily: "var(--fm)" }}>🤖 AI Threat</div>
               <div style={{ fontSize: 32, fontWeight: 700, fontFamily: "var(--fm)", color: game.aiThreat > 70 ? "#e84057" : game.aiThreat > 40 ? "#e8a040" : "#7fda8f" }}>{game.aiThreat}%</div>
             </div>
           </div>
