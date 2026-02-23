@@ -3,10 +3,65 @@ import { useState, useEffect, useCallback, useRef } from "react";
 /* ═══════════════════ DATA ═══════════════════ */
 
 const RESOURCES = {
-  funds:      { icon: "💰", label: "Funds",      color: "#c9a84c", max: 100 },
-  talent:     { icon: "🧠", label: "Talent",     color: "#6eb5ff", max: 100 },
-  ethics:     { icon: "⚖️", label: "Ethics",     color: "#7fda8f", max: 100 },
-  innovation: { icon: "💡", label: "Innovation", color: "#c688f0", max: 100 },
+  funds:      { glyph: "◈", label: "Funds",      color: "#c9a84c", max: 100 },
+  talent:     { glyph: "◉", label: "Talent",     color: "#6eb5ff", max: 100 },
+  ethics:     { glyph: "◎", label: "Ethics",     color: "#7fda8f", max: 100 },
+  innovation: { glyph: "◆", label: "Innovation", color: "#c688f0", max: 100 },
+};
+
+const _sp = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
+const Icon = ({ name, size = 16, style }) => {
+  const s = { width: size, height: size, display: "inline-block", verticalAlign: "-0.15em", flexShrink: 0, ...style };
+  switch (name) {
+    case "funds": return (
+      <svg viewBox="0 0 24 24" style={s}>
+        <path d="M12 2 L22 9 L12 22 L2 9 Z" {..._sp} />
+        <path d="M2 9 H22" {..._sp} strokeWidth={1.2} />
+        <path d="M8 2 L6.5 9 L12 22 M16 2 L17.5 9 L12 22" {..._sp} strokeWidth={1} />
+      </svg>
+    );
+    case "talent": return (
+      <svg viewBox="0 0 24 24" style={s}>
+        <circle cx="12" cy="7.5" r="4" {..._sp} />
+        <path d="M4 21 C4 16 7.5 13 12 13 C16.5 13 20 16 20 21" {..._sp} />
+      </svg>
+    );
+    case "ethics": return (
+      <svg viewBox="0 0 24 24" style={s}>
+        <path d="M12 2 V6" {..._sp} />
+        <path d="M4 6 H20" {..._sp} />
+        <path d="M12 6 V20" {..._sp} strokeWidth={1.2} />
+        <path d="M4 6 L2 12" {..._sp} />
+        <path d="M8 6 L6 12" {..._sp} />
+        <path d="M2 12 Q5 15 8 12" {..._sp} strokeWidth={1.2} />
+        <path d="M16 6 L14 12" {..._sp} />
+        <path d="M20 6 L18 12" {..._sp} />
+        <path d="M14 12 Q17 15 20 12" {..._sp} strokeWidth={1.2} />
+        <path d="M8 20 H16" {..._sp} />
+      </svg>
+    );
+    case "innovation": return (
+      <svg viewBox="0 0 24 24" style={s}>
+        <path d="M9 18 H15" {..._sp} />
+        <path d="M10 21 H14" {..._sp} />
+        <path d="M9 18 C9 15 6 13.5 6 9 A6 6 0 0 1 18 9 C18 13.5 15 15 15 18" {..._sp} />
+        <path d="M12 2 V4" {..._sp} strokeWidth={1.2} />
+        <path d="M4.93 4.93 L6.34 6.34" {..._sp} strokeWidth={1.2} />
+        <path d="M19.07 4.93 L17.66 6.34" {..._sp} strokeWidth={1.2} />
+        <path d="M2 12 H4" {..._sp} strokeWidth={1.2} />
+        <path d="M20 12 H22" {..._sp} strokeWidth={1.2} />
+      </svg>
+    );
+    case "threat": return (
+      <svg viewBox="0 0 24 24" style={s}>
+        <rect x="5" y="3" width="14" height="14" rx="2" {..._sp} />
+        <path d="M9 3 V1 M15 3 V1 M9 17 V19 M15 17 V19 M5 7 H3 M5 13 H3 M19 7 H21 M19 13 H21" {..._sp} strokeWidth={1.2} />
+        <circle cx="12" cy="10" r="3" {..._sp} />
+        <circle cx="12" cy="10" r="0.5" fill="currentColor" stroke="none" />
+      </svg>
+    );
+    default: return null;
+  }
 };
 
 const ENDINGS = [
@@ -245,11 +300,11 @@ function shareText(ending, game, historyLen, url) {
     ``,
     `${ending.icon} ${ending.title} — týden ${game.week}/30`,
     ``,
-    `💰 Funds      ${b(game.funds)} ${game.funds}`,
-    `🧠 Talent     ${b(game.talent)} ${game.talent}`,
-    `⚖️ Ethics     ${b(game.ethics)} ${game.ethics}`,
-    `💡 Innovation ${b(game.innovation)} ${game.innovation}`,
-    `🤖 AI Threat  ${game.aiThreat}%`,
+    `◈ Funds      ${b(game.funds)} ${game.funds}`,
+    `◉ Talent     ${b(game.talent)} ${game.talent}`,
+    `◎ Ethics     ${b(game.ethics)} ${game.ethics}`,
+    `◆ Innovation ${b(game.innovation)} ${game.innovation}`,
+    `⚠ AI Threat  ${game.aiThreat}%`,
     ``,
     `${historyLen} rozhodnutí · 7 možných konců`,
     `Dokážeš dopadnout jinak?`,
@@ -269,9 +324,9 @@ const Badge = ({ k, v }) => {
       color: pos ? r.color : "#e84057",
       background: pos ? `${r.color}18` : "rgba(232,64,87,0.12)",
       padding: "3px 8px", borderRadius: 4, whiteSpace: "nowrap",
-      lineHeight: 1.3, display: "inline-block",
+      lineHeight: 1.3, display: "inline-flex", alignItems: "center", gap: 3,
     }}>
-      {r.icon}{v > 0 ? "+" : ""}{v}
+      <Icon name={k} size={12} />{v > 0 ? "+" : ""}{v}
     </span>
   );
 };
@@ -290,19 +345,19 @@ const Hints = ({ fx }) => (
         <span key={k} style={{
           fontSize: 12, fontFamily: "var(--fm)",
           color: pos ? r.color : "#e84057",
-          opacity: 0.7,
+          opacity: 0.7, display: "inline-flex", alignItems: "center", gap: 1,
         }}>
-          {r.icon}{pos ? "↑" : "↓"}
+          <Icon name={k} size={12} />{pos ? "↑" : "↓"}
         </span>
       );
     })}
   </div>
 );
 
-const Bar = ({ value, max, color, label, icon }) => (
+const Bar = ({ value, max, color, label, rkey }) => (
   <div style={{ flex: 1, minWidth: 140 }}>
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-      <span style={{ fontSize: 14, color: "#888", letterSpacing: 1, fontFamily: "var(--fm)" }}>{icon} {label}</span>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+      <span style={{ fontSize: 14, color: "#888", letterSpacing: 1, fontFamily: "var(--fm)", display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name={rkey} size={14} /> {label}</span>
       <span style={{ fontSize: 18, color, fontWeight: 700, fontFamily: "var(--fm)" }}>{value}</span>
     </div>
     <div style={{ height: 8, background: "rgba(255,255,255,0.06)", borderRadius: 4, overflow: "hidden" }}>
@@ -317,7 +372,7 @@ const Bar = ({ value, max, color, label, icon }) => (
 
 const Threat = ({ value }) => (
   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-    <span style={{ fontSize: 12, color: "#888", letterSpacing: 2, fontFamily: "var(--fm)" }}>AI THREAT</span>
+    <span style={{ fontSize: 12, color: "#888", letterSpacing: 2, fontFamily: "var(--fm)", display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="threat" size={12} /> AI THREAT</span>
     <div style={{ display: "flex", gap: 2 }}>
       {Array.from({ length: 20 }).map((_, i) => {
         const on = i < Math.ceil(value / 100 * 20);
@@ -494,7 +549,7 @@ export default function Singularity() {
             <Threat value={game.aiThreat} />
           </div>
           <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-            {Object.entries(RESOURCES).map(([k, r]) => <Bar key={k} value={game[k]} max={r.max} color={r.color} label={r.label} icon={r.icon} />)}
+            {Object.entries(RESOURCES).map(([k, r]) => <Bar key={k} value={game[k]} max={r.max} color={r.color} label={r.label} rkey={k} />)}
           </div>
           <div style={{ height: 1, background: "var(--bdr)", marginTop: 4 }} />
         </div>
@@ -546,7 +601,7 @@ export default function Singularity() {
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 32 }}>
             {Object.entries(reso.effects).filter(([k]) => k in RESOURCES).map(([k, v]) => {
               const r = RESOURCES[k]; const pos = v > 0;
-              return <span key={k} style={{ fontSize: 14, fontWeight: 600, fontFamily: "var(--fm)", color: pos ? r.color : "#e84057", background: pos ? `${r.color}14` : "rgba(232,64,87,0.1)", padding: "10px 16px", borderRadius: 8, border: `1px solid ${pos ? `${r.color}30` : "rgba(232,64,87,.2)"}` }}>{r.icon} {r.label} {pos ? "+" : ""}{v}</span>;
+              return <span key={k} style={{ fontSize: 14, fontWeight: 600, fontFamily: "var(--fm)", color: pos ? r.color : "#e84057", background: pos ? `${r.color}14` : "rgba(232,64,87,0.1)", padding: "10px 16px", borderRadius: 8, border: `1px solid ${pos ? `${r.color}30` : "rgba(232,64,87,.2)"}`, display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name={k} size={14} /> {r.label} {pos ? "+" : ""}{v}</span>;
             })}
           </div>
           <button onClick={cont} style={pbtn}>POKRAČOVAT →</button>
@@ -562,7 +617,7 @@ export default function Singularity() {
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
             {Object.entries(rndEvt.effects).filter(([k]) => k in RESOURCES).map(([k, v]) => {
               const r = RESOURCES[k]; const pos = v > 0;
-              return <span key={k} style={{ fontSize: 14, fontWeight: 600, fontFamily: "var(--fm)", color: pos ? r.color : "#e84057", padding: "10px 16px", borderRadius: 8, background: pos ? `${r.color}14` : "rgba(232,64,87,0.1)", border: `1px solid ${pos ? `${r.color}30` : "rgba(232,64,87,.2)"}` }}>{r.icon} {pos ? "+" : ""}{v}</span>;
+              return <span key={k} style={{ fontSize: 14, fontWeight: 600, fontFamily: "var(--fm)", color: pos ? r.color : "#e84057", padding: "10px 16px", borderRadius: 8, background: pos ? `${r.color}14` : "rgba(232,64,87,0.1)", border: `1px solid ${pos ? `${r.color}30` : "rgba(232,64,87,.2)"}`, display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name={k} size={14} /> {pos ? "+" : ""}{v}</span>;
             })}
           </div>
           <p style={{ fontSize: 15, fontStyle: "italic", color: "var(--txd)", margin: "0 0 32px" }}>{rndEvt.msg}</p>
@@ -585,12 +640,12 @@ export default function Singularity() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginBottom: 36, padding: 28, background: "rgba(255,255,255,0.02)", borderRadius: 14, border: "1px solid var(--bdr)" }}>
               {Object.entries(RESOURCES).map(([k, r]) => (
                 <div key={k} style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 13, color: "var(--txd)", letterSpacing: 1, fontFamily: "var(--fm)" }}>{r.icon} {r.label}</div>
+                  <div style={{ fontSize: 13, color: "var(--txd)", letterSpacing: 1, fontFamily: "var(--fm)", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}><Icon name={k} size={13} /> {r.label}</div>
                   <div style={{ fontSize: 32, fontWeight: 700, color: r.color, fontFamily: "var(--fm)" }}>{sg[k]}</div>
                 </div>
               ))}
               <div style={{ gridColumn: "1 / -1", textAlign: "center", paddingTop: 12, borderTop: "1px solid var(--bdr)" }}>
-                <div style={{ fontSize: 13, color: "var(--txd)", letterSpacing: 1, fontFamily: "var(--fm)" }}>🤖 AI Threat</div>
+                <div style={{ fontSize: 13, color: "var(--txd)", letterSpacing: 1, fontFamily: "var(--fm)", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}><Icon name="threat" size={13} /> AI Threat</div>
                 <div style={{ fontSize: 32, fontWeight: 700, fontFamily: "var(--fm)", color: sg.aiThreat > 70 ? "#e84057" : sg.aiThreat > 40 ? "#e8a040" : "#7fda8f" }}>{sg.aiThreat}%</div>
               </div>
             </div>
@@ -614,12 +669,12 @@ export default function Singularity() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginBottom: 36, padding: 28, background: "rgba(255,255,255,0.02)", borderRadius: 14, border: "1px solid var(--bdr)" }}>
             {Object.entries(RESOURCES).map(([k, r]) => (
               <div key={k} style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 13, color: "var(--txd)", letterSpacing: 1, fontFamily: "var(--fm)" }}>{r.icon} {r.label}</div>
+                <div style={{ fontSize: 13, color: "var(--txd)", letterSpacing: 1, fontFamily: "var(--fm)", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}><Icon name={k} size={13} /> {r.label}</div>
                 <div style={{ fontSize: 32, fontWeight: 700, color: r.color, fontFamily: "var(--fm)" }}>{game[k]}</div>
               </div>
             ))}
             <div style={{ gridColumn: "1 / -1", textAlign: "center", paddingTop: 12, borderTop: "1px solid var(--bdr)" }}>
-              <div style={{ fontSize: 13, color: "var(--txd)", letterSpacing: 1, fontFamily: "var(--fm)" }}>🤖 AI Threat</div>
+              <div style={{ fontSize: 13, color: "var(--txd)", letterSpacing: 1, fontFamily: "var(--fm)", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}><Icon name="threat" size={13} /> AI Threat</div>
               <div style={{ fontSize: 32, fontWeight: 700, fontFamily: "var(--fm)", color: game.aiThreat > 70 ? "#e84057" : game.aiThreat > 40 ? "#e8a040" : "#7fda8f" }}>{game.aiThreat}%</div>
             </div>
           </div>
